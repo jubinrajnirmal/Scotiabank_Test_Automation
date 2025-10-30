@@ -190,7 +190,6 @@ pipeline {
         def body = """
         <b>Build:</b> <a href="${env.BUILD_URL}">${env.JOB_NAME} #${env.BUILD_NUMBER}</a><br/>
         <b>Status:</b> ${status}<br/>
-        <b>Commit:</b> ${env.GIT_COMMIT_SHORT ?: ''}<br/>
         <hr/>
         <b>Scenario Results:</b><br/>
         Total: ${env.TOTAL_SCENARIOS} &nbsp; | &nbsp; Passed: ${env.PASSED_SCENARIOS} &nbsp; | &nbsp; Failed: ${env.FAILED_SCENARIOS} &nbsp; | &nbsp; Skipped: ${env.SKIPPED_SCENARIOS}<br/>
