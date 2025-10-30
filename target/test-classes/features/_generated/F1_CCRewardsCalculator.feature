@@ -50,9 +50,16 @@ Feature: Credit Card rewards calculator
     And it should summarise the total monthly spend as "$<total>"
 
     Examples:
-      # excel: CC_DetailedSpend
       | groceries | bills | entertainment | transportation | home_improvements | travel | other_purchases | total |
-      | placeholder | placeholder | placeholder | placeholder |placeholder |placeholder |placeholder |placeholder |
+      | 300 | 200 | 150 | 100 | 50 | 80 | 70 | 950 |
+      | 400 | 400 | 250 | 200 | 150 | 120 | 50 | 1570 |
+      | 50 | 75 | 25 | 40 | 0 | 0 | 10 | 200 |
+      | 500 | 300 | 200 | 150 | 100 | 250 | 175 | 1675 |
+      | 999 | 0 | 0 | 0 | 0 | 0 | 0 | 999 |
+      | 1200 | 600 | 400 | 250 | 350 | 500 | 300 | 3600 |
+      | 80 | 220 | 90 | 60 | 30 | 40 | 55 | 575 |
+      | 200 | 200 | 200 | 200 | 200 | 200 | 200 | 1400 |
+      | 145 | 180 | 135 | 95 | 60 | 110 | 75 | 800 |
 
 
   @avgSpendDDT
@@ -64,9 +71,15 @@ Feature: Credit Card rewards calculator
     And it should state "You spend $<spend> on your credit card in a typical month"
 
     Examples:
-      # excel: CC_AverageSpend
       | spend |
-      |placeholder |
+      | 250 |
+      | 1,500 |
+      | 2,000 |
+      | 3,500 |
+      | 2,222 |
+      | 3,333 |
+      | 4,500 |
+      | 1,234 |
 	  
   @edgeZero
     Scenario: Zero total should not navigate to results
@@ -85,7 +98,8 @@ Feature: Credit Card rewards calculator
       
   @avgZero
 	Scenario: Average spend = 0 should not navigate to results
-  		Given the user is on the "Average spend" tab
+  		Given the user has navigated to the Scotiabank credit card rewards calculator
+  		And the user is on the "Average spend" tab
   		When the user enters "0" as the average monthly spend
  		And the user clicks the "Calculate rewards" button
   		Then the results page should NOT be displayed

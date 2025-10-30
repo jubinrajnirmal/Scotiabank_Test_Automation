@@ -133,7 +133,7 @@
 				<version>3.2.5</version>
 				<configuration>
 					<includes>
-						<include>**/*Runner.java</include>
+						<!--<include>**/*Runner.java</include>-->
 						<include>**/CucumberSuiteRunner.java</include>
 					</includes>
 				</configuration>

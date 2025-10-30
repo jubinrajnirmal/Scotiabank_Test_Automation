@@ -98,8 +98,7 @@ Feature: Credit Card rewards calculator
       
   @avgZero
 	Scenario: Average spend = 0 should not navigate to results
-  		Given the user has navigated to the Scotiabank credit card rewards calculator
-  		And the user is on the "Average spend" tab
+  		Given the user is on the "Average spend" tab
   		When the user enters "0" as the average monthly spend
  		And the user clicks the "Calculate rewards" button
   		Then the results page should NOT be displayed
