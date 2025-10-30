@@ -87,25 +87,28 @@ pipeline {
           int stepsTotal = 0, stepsPassed = 0, stepsFailed = 0, stepsSkipped = 0, stepsPending = 0
 
           features.each { f ->
-            (f.elements ?: []).each { sc ->
-              scenariosTotal++
-              def stepStatuses = (sc.steps ?: []).collect { it.result?.status ?: 'unknown' }
-              def scFailed  = stepStatuses.any { it == 'failed' }
-              def scSkipped = !scFailed && stepStatuses.any { it in ['skipped','pending','undefined'] }
-              if (scFailed)       scenariosFailed++
-              else if (scSkipped) scenariosSkipped++
-              else                scenariosPassed++
-
-              (sc.steps ?: []).each { st ->
-                def s = st.result?.status ?: 'unknown'
-                stepsTotal++
-                if (s == 'passed') stepsPassed++
-                else if (s == 'failed') stepsFailed++
-                else if (s in ['skipped','undefined']) stepsSkipped++
-                else if (s == 'pending') stepsPending++
-              }
-            }
-          }
+			  (f.elements ?: [])
+			    .findAll { (it.type ?: '').toLowerCase() != 'background' }   
+			    .each { sc ->
+			      def stepStatuses = (sc.steps ?: []).collect { it.result?.status ?: 'unknown' }
+			      def scFailed  = stepStatuses.any { it == 'failed' }
+			      def scSkipped = !scFailed && stepStatuses.any { it in ['skipped','pending','undefined'] }
+			
+			      scenariosTotal++
+			      if (scFailed)       scenariosFailed++
+			      else if (scSkipped) scenariosSkipped++
+			      else                scenariosPassed++
+			
+			      (sc.steps ?: []).each { st ->
+			        def s = st.result?.status ?: 'unknown'
+			        stepsTotal++
+			        if (s == 'passed') stepsPassed++
+			        else if (s == 'failed') stepsFailed++
+			        else if (s in ['skipped','undefined']) stepsSkipped++
+			        else if (s == 'pending') stepsPending++
+			      }
+			    }
+			}
 
           env.TOTAL_SCENARIOS   = scenariosTotal.toString()
           env.PASSED_SCENARIOS  = scenariosPassed.toString()
