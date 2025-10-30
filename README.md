@@ -1,6 +1,6 @@
 # Scotiabank Test Automation
 
-Selenium + Java + Cucumber (JUnit) automation test suite, built with Maven.
+Selenium + Java + Cucumber (JUnit) automation test suite, built using Maven.
 
 ## Prerequisites
 - Java 17+ (`java -version`)
