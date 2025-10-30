@@ -106,13 +106,13 @@
 					<execution>
 						<id>generate-features-from-excel</id>
 						<!-- ensures files exist when resources are copied -->
-						<phase>generate-test-resources</phase>
+						<phase>process-test-classes</phase>
 						<goals>
 							<goal>java</goal>
 						</goals>
 						<configuration>
 							<mainClass>
-								com.rbcroyalbank.framework.utils.ExcelExamplesGenerator</mainClass>
+								com.scotiabank.utils.ExcelExamplesGenerator</mainClass>
 							<classpathScope>test</classpathScope>
 						</configuration>
 					</execution>

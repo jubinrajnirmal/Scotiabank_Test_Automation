@@ -14,7 +14,7 @@ public class ExcelExamplesGenerator {
 
 	private static final String IN_DIR = "src/test/resources/features";
 	private static final String OUT_DIR = "src/test/resources/features/_generated";
-	private static final String XLSX = "src/test/resources/testdata/Scotiabank_Data.xlsx"; 
+	private static final String XLSX = "src/test/resources/testData/Scotiabank_Data.xlsx"; 
 
 	public static void main(String[] args) throws Exception {
 		Path in = Paths.get(IN_DIR);

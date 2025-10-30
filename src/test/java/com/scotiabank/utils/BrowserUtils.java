@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.WindowType;
 import org.openqa.selenium.interactions.Actions;
@@ -186,14 +187,14 @@ public class BrowserUtils extends DriverUtils {
 	// Screenshot Taker
 
 	// WebsiteTrustCookiePromptCanceller
-	/*
-	 * public void closeCookieBannerIfPresent() { WebDriverWait w = new
-	 * WebDriverWait(driver, java.time.Duration.ofSeconds(5)); By closeBtn =
-	 * By.xpath("//*[contains(@class,'onetrust-close-btn-ui')]"); WebElement btn =
-	 * w.until(ExpectedConditions.elementToBeClickable(closeBtn)); btn.click();
-	 * w.until(ExpectedConditions.invisibilityOfElementLocated(By.id(
-	 * "onetrust-banner-sdk"))); }
-	 */
+
+	public void closeCookieBannerIfPresent() {
+		WebDriverWait w = new WebDriverWait(driver, java.time.Duration.ofSeconds(5));
+		By closeBtn = By.xpath("//*[contains(@class,'onetrust-close-btn-ui')]");
+		WebElement btn = w.until(ExpectedConditions.elementToBeClickable(closeBtn));
+		btn.click();
+		w.until(ExpectedConditions.invisibilityOfElementLocated(By.id("onetrust-banner-sdk")));
+	}
 
 	// Action Class Helper Methods
 	public void scrollToFooter() {
@@ -203,6 +204,35 @@ public class BrowserUtils extends DriverUtils {
 	public void hover(WebElement element) {
 		new Actions(driver).moveToElement(element).perform();
 		;
+	}
+
+	// ---- JS helpers ----
+	private JavascriptExecutor js() {
+		return (JavascriptExecutor) driver;
+	}
+
+	/** Scroll the window by a small delta (defaults shown). */
+	public void jsScrollBy(int x, int y) {
+		js().executeScript("window.scrollBy(arguments[0], arguments[1]);", x, y);
+	}
+
+	/** Scroll down a bit (nice for nudging content into view). */
+	public void jsScrollDown() {
+		jsScrollBy(0, 500); // adjust the 250 if you want a smaller/larger nudge
+	}
+
+	/** Scroll up a bit. */
+	public void jsScrollUp() {
+		jsScrollBy(0, -250);
+	}
+
+	/**
+	 * Scroll element into view (centered, with small offset for sticky headers).
+	 */
+	public void jsScrollIntoViewCenter(WebElement el) {
+		js().executeScript("arguments[0].scrollIntoView({block:'center', inline:'nearest'});", el);
+		// optional micro-nudge in case of sticky top bars
+		jsScrollBy(0, -60);
 	}
 
 }
