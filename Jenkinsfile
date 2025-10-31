@@ -2,20 +2,24 @@ pipeline {
   agent any
 
   options {
-    timestamps()                                        // Build log with timestamps
-    disableConcurrentBuilds()                           // To prevent overlapping runs
-    buildDiscarder(logRotator(numToKeepStr: '50'))      // Only keep last 50 builds, delete the rest
+    timestamps()
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '50'))
   }
 
   triggers {
-    cron('TZ=America/Toronto\nH 12 * * *')              // 12 PM daily
-    githubPush()                                        // GitHub webhook
+    cron('TZ=America/Toronto\nH 12 * * *')   // 12 PM daily
+    githubPush()
   }
 
   environment {
-    GIT_URL  = 'https://github.com/jubinrajnirmal/Scotiabank_Test_Automation.git'
-    REPO_DIR = 'workdir'
-    EMAIL_TO = 'test.automation.server.2025@gmail.com'
+    GIT_URL   = 'https://github.com/jubinrajnirmal/Scotiabank_Test_Automation.git'
+    REPO_DIR  = 'workdir'
+    EMAIL_TO  = 'test.automation.server.2025@gmail.com'
+
+    // CSV ledger lives on the Jenkins VM; we copy a snapshot per build
+    CSV_LEDGER = '/home/tmp_admin/testResults/test_results.csv'
+    CSV_LOCAL  = 'test_results.csv'
   }
 
   stages {
@@ -25,26 +29,23 @@ pipeline {
         sh '''
           set -eux
           rm -rf "${REPO_DIR}" || true
-          echo "Cloning the Github repo..."
           git clone "${GIT_URL}" "${REPO_DIR}"
         '''
       }
     }
 
-    stage('Run tests using tee cmd') {
+    stage('Run tests') {
       steps {
         dir("${env.REPO_DIR}") {
           sh '''
             set -eux
-            rm -f build_log.txt || true
-            mvn -B clean test | tee build_log.txt
+            mvn -B clean test 
           '''
         }
       }
       post {
         always {
           dir("${env.REPO_DIR}") {
-            archiveArtifacts artifacts: 'build_log.txt',         allowEmptyArchive: true
             archiveArtifacts artifacts: 'reports/cucumber.json', allowEmptyArchive: true
             archiveArtifacts artifacts: 'reports/cucumber.html', allowEmptyArchive: true
             archiveArtifacts artifacts: 'allure-results/**',     allowEmptyArchive: true
@@ -64,7 +65,7 @@ pipeline {
       steps {
         script {
           def jsonPath = "${env.REPO_DIR}/reports/cucumber.json"
-          
+
           env.TOTAL_SCENARIOS   = env.TOTAL_SCENARIOS   ?: '0'
           env.PASSED_SCENARIOS  = env.PASSED_SCENARIOS  ?: '0'
           env.FAILED_SCENARIOS  = env.FAILED_SCENARIOS  ?: '0'
@@ -87,34 +88,33 @@ pipeline {
           int stepsTotal = 0, stepsPassed = 0, stepsFailed = 0, stepsSkipped = 0, stepsPending = 0
 
           features.each { f ->
-			  (f.elements ?: [])
-			    .findAll { (it.type ?: '').toLowerCase() != 'background' }   
-			    .each { sc ->
-			      def stepStatuses = (sc.steps ?: []).collect { it.result?.status ?: 'unknown' }
-			      def scFailed  = stepStatuses.any { it == 'failed' }
-			      def scSkipped = !scFailed && stepStatuses.any { it in ['skipped','pending','undefined'] }
-			
-			      scenariosTotal++
-			      if (scFailed)       scenariosFailed++
-			      else if (scSkipped) scenariosSkipped++
-			      else                scenariosPassed++
-			
-			      (sc.steps ?: []).each { st ->
-			        def s = st.result?.status ?: 'unknown'
-			        stepsTotal++
-			        if (s == 'passed') stepsPassed++
-			        else if (s == 'failed') stepsFailed++
-			        else if (s in ['skipped','undefined']) stepsSkipped++
-			        else if (s == 'pending') stepsPending++
-			      }
-			    }
-			}
+            (f.elements ?: [])
+              .findAll { (it.type ?: '').toLowerCase() != 'background' }
+              .each { sc ->
+                def stepStatuses = (sc.steps ?: []).collect { it.result?.status ?: 'unknown' }
+                def scFailed  = stepStatuses.any { it == 'failed' }
+                def scSkipped = !scFailed && stepStatuses.any { it in ['skipped','pending','undefined'] }
+
+                scenariosTotal++
+                if (scFailed)       scenariosFailed++
+                else if (scSkipped) scenariosSkipped++
+                else                scenariosPassed++
+
+                (sc.steps ?: []).each { st ->
+                  def s = st.result?.status ?: 'unknown'
+                  stepsTotal++
+                  if (s == 'passed') stepsPassed++
+                  else if (s == 'failed') stepsFailed++
+                  else if (s in ['skipped','undefined']) stepsSkipped++
+                  else if (s == 'pending') stepsPending++
+                }
+              }
+          }
 
           env.TOTAL_SCENARIOS   = scenariosTotal.toString()
           env.PASSED_SCENARIOS  = scenariosPassed.toString()
           env.FAILED_SCENARIOS  = scenariosFailed.toString()
           env.SKIPPED_SCENARIOS = scenariosSkipped.toString()
-
           env.TOTAL_STEPS   = stepsTotal.toString()
           env.PASSED_STEPS  = stepsPassed.toString()
           env.FAILED_STEPS  = stepsFailed.toString()
@@ -140,42 +140,83 @@ pipeline {
       }
     }
 
-    stage('Append to Google Sheets') {
-      environment {
-        GS_WEBAPP_URL = credentials('GOOGLE_SHEET_WEBAPP_URL')
-      }
+    stage('Append to local CSV') {
       steps {
         script {
-          def commit = sh(returnStdout: true, script: "cd ${env.REPO_DIR} && git rev-parse --short HEAD").trim()
-          env.GIT_COMMIT_SHORT = commit ?: ''
-
-          def payload = [
-            timestamp        : new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX", TimeZone.getTimeZone('America/Toronto')),
-            jobName          : env.JOB_NAME,
-            buildNumber      : env.BUILD_NUMBER,
-            gitUrl           : env.GIT_URL,
-            gitCommit        : env.GIT_COMMIT_SHORT,
-            scenariosTotal   : env.TOTAL_SCENARIOS,
-            scenariosPassed  : env.PASSED_SCENARIOS,
-            scenariosFailed  : env.FAILED_SCENARIOS,
-            scenariosSkipped : env.SKIPPED_SCENARIOS,
-            stepsTotal       : env.TOTAL_STEPS,
-            stepsPassed      : env.PASSED_STEPS,
-            stepsFailed      : env.FAILED_STEPS,
-            stepsSkipped     : env.SKIPPED_STEPS,
-            stepsPending     : env.PENDING_STEPS,
-            buildUrl         : env.BUILD_URL,
-            bundleUrl        : "${env.BUILD_URL}artifact/reports-bundle.zip",
-            allureUrl        : "${env.BUILD_URL}allure"
+          def ts = new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX", TimeZone.getTimeZone('America/Toronto'))
+          def row = [
+            ts,
+            env.JOB_NAME ?: '',
+            env.BUILD_NUMBER ?: '',
+            env.GIT_URL ?: '',
+            (env.GIT_COMMIT_SHORT ?: sh(returnStdout: true, script: "cd ${env.REPO_DIR} && git rev-parse --short HEAD || true").trim()),
+            env.TOTAL_SCENARIOS ?: '0',
+            env.PASSED_SCENARIOS ?: '0',
+            env.FAILED_SCENARIOS ?: '0',
+            env.SKIPPED_SCENARIOS ?: '0',
+            env.TOTAL_STEPS ?: '0',
+            env.PASSED_STEPS ?: '0',
+            env.FAILED_STEPS ?: '0',
+            env.SKIPPED_STEPS ?: '0',
+            env.PENDING_STEPS ?: '0',
+            env.BUILD_URL ?: '',
+            "${env.BUILD_URL}artifact/reports-bundle.zip",
+            "${env.BUILD_URL}allure"
           ]
-          writeFile file: 'payload.json', text: groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(payload))
-          sh 'cat payload.json'
-          sh '''
-            set -eux
-            curl -sS -X POST -H "Content-Type: application/json" --data @payload.json "$GS_WEBAPP_URL" -o gs_response.txt -w "\\nHTTP %{http_code}\\n"
-          '''
-          archiveArtifacts artifacts: 'payload.json, gs_response.txt', allowEmptyArchive: true
+          def q = { s -> '"' + (s?.toString()?.replaceAll('"','""') ?: '') + '"' }
+          def csvLine = row.collect(q).join(',')
+
+          def header = [
+            'timestamp','jobName','buildNumber','gitUrl','gitCommit',
+            'scenariosTotal','scenariosPassed','scenariosFailed','scenariosSkipped',
+            'stepsTotal','stepsPassed','stepsFailed','stepsSkipped','stepsPending',
+            'buildUrl','bundleUrl','allureUrl'
+          ].join(',')
+
+          sh """
+            set -eu
+            mkdir -p \$(dirname '${CSV_LEDGER}')
+            touch '${CSV_LEDGER}'
+            if ! head -1 '${CSV_LEDGER}' | grep -q '^timestamp,jobName,buildNumber,'; then
+              echo '${header}' >> '${CSV_LEDGER}'
+            fi
+            echo ${csvLine@Q} >> '${CSV_LEDGER}'
+            cp '${CSV_LEDGER}' '${CSV_LOCAL}'
+          """
+
+          archiveArtifacts artifacts: "${env.CSV_LOCAL}", allowEmptyArchive: false
         }
+      }
+    }
+
+    stage('Publish CSV as HTML') {
+      steps {
+        script {
+          def csvText = readFile(env.CSV_LOCAL)
+          def safe = csvText.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+          def html = """<html><head><meta charset="utf-8">
+<style>
+body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:16px}
+pre{white-space:pre; overflow:auto; background:#fafafa; border:1px solid #e5e5e5; padding:12px}
+a.btn{display:inline-block;padding:8px 12px;border:1px solid #0a66c2;border-radius:8px;text-decoration:none}
+</style>
+<title>Test Results (CSV)</title></head>
+<body>
+  <h2>Test Results (CSV)</h2>
+  <p><a class="btn" href="../artifact/${env.CSV_LOCAL}">Download CSV</a></p>
+  <pre>${safe}</pre>
+</body></html>"""
+          writeFile file: 'reports/results.html', text: html
+        }
+
+        publishHTML(target: [
+          reportDir                : 'reports',
+          reportFiles              : 'results.html',
+          reportName               : 'Test Results (CSV)',
+          keepAll                  : true,
+          allowMissing             : false,
+          alwaysLinkToLastBuild    : true
+        ])
       }
     }
   }
@@ -184,7 +225,9 @@ pipeline {
     always {
       script {
         def status = currentBuild.currentResult ?: 'SUCCESS'
-        def sheetLink = (fileExists('gs_response.txt') ? readFile('gs_response.txt').readLines().find { it ==~ /https?:.*/ } : null) ?: 'Google Sheet updated (see Apps Script).'
+        def csvArtifactUrl = "${env.BUILD_URL}artifact/${env.CSV_LOCAL}"
+        def csvHtmlUrl     = "${env.BUILD_URL}HTML_20Report/"
+
         def subject = "[Test Automation Run][${status}] ${env.JOB_NAME} #${env.BUILD_NUMBER}: ${env.PASSED_SCENARIOS}/${env.TOTAL_SCENARIOS} scenarios passed"
 
         def body = """
@@ -196,7 +239,8 @@ pipeline {
         <b>Step Results:</b><br/>
         Total: ${env.TOTAL_STEPS} &nbsp; | &nbsp; Passed: ${env.PASSED_STEPS} &nbsp; | &nbsp; Failed: ${env.FAILED_STEPS} &nbsp; | &nbsp; Skipped: ${env.SKIPPED_STEPS} &nbsp; | &nbsp; Pending: ${env.PENDING_STEPS}<br/>
         <hr/>
-        <b>Google Sheet:</b> ${sheetLink}<br/>
+        <b>CSV (download):</b> <a href="${csvArtifactUrl}">test_results.csv</a><br/>
+        <b>CSV (HTML view):</b> <a href="${csvHtmlUrl}">Test Results (CSV)</a><br/>
         <b>Report bundle (zip):</b> <a href="${env.BUILD_URL}artifact/reports-bundle.zip">Download</a><br/>
         <b>Allure report:</b> <a href="${env.BUILD_URL}allure">Open</a><br/>
         """
