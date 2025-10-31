@@ -141,54 +141,56 @@ pipeline {
     }
 
     stage('Append to local CSV') {
-      steps {
-        script {
-          def ts = new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX", TimeZone.getTimeZone('America/Toronto'))
-          def row = [
-            ts,
-            env.JOB_NAME ?: '',
-            env.BUILD_NUMBER ?: '',
-            env.GIT_URL ?: '',
-            (env.GIT_COMMIT_SHORT ?: sh(returnStdout: true, script: "cd ${env.REPO_DIR} && git rev-parse --short HEAD || true").trim()),
-            env.TOTAL_SCENARIOS ?: '0',
-            env.PASSED_SCENARIOS ?: '0',
-            env.FAILED_SCENARIOS ?: '0',
-            env.SKIPPED_SCENARIOS ?: '0',
-            env.TOTAL_STEPS ?: '0',
-            env.PASSED_STEPS ?: '0',
-            env.FAILED_STEPS ?: '0',
-            env.SKIPPED_STEPS ?: '0',
-            env.PENDING_STEPS ?: '0',
-            env.BUILD_URL ?: '',
-            "${env.BUILD_URL}artifact/reports-bundle.zip",
-            "${env.BUILD_URL}allure"
-          ]
-          def q = { s -> '"' + (s?.toString()?.replaceAll('"','""') ?: '') + '"' }
-          def csvLine = row.collect(q).join(',')
+  steps {
+    script {
+      def ts = new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX", TimeZone.getTimeZone('America/Toronto'))
+      def row = [
+        ts,
+        env.JOB_NAME ?: '',
+        env.BUILD_NUMBER ?: '',
+        env.GIT_URL ?: '',
+        (env.GIT_COMMIT_SHORT ?: sh(returnStdout: true, script: "cd ${env.REPO_DIR} && git rev-parse --short HEAD || true").trim()),
+        env.TOTAL_SCENARIOS ?: '0',
+        env.PASSED_SCENARIOS ?: '0',
+        env.FAILED_SCENARIOS ?: '0',
+        env.SKIPPED_SCENARIOS ?: '0',
+        env.TOTAL_STEPS ?: '0',
+        env.PASSED_STEPS ?: '0',
+        env.FAILED_STEPS ?: '0',
+        env.SKIPPED_STEPS ?: '0',
+        env.PENDING_STEPS ?: '0',
+        env.BUILD_URL ?: '',
+        "${env.BUILD_URL}artifact/reports-bundle.zip",
+        "${env.BUILD_URL}allure"
+      ]
+      def q = { s -> '"' + (s?.toString()?.replaceAll('"','""') ?: '') + '"' }
+      def csvLine = row.collect(q).join(',')
 
-          def header = [
-            'timestamp','jobName','buildNumber','gitUrl','gitCommit',
-            'scenariosTotal','scenariosPassed','scenariosFailed','scenariosSkipped',
-            'stepsTotal','stepsPassed','stepsFailed','stepsSkipped','stepsPending',
-            'buildUrl','bundleUrl','allureUrl'
-          ].join(',')
+      // write the row safely, then append via shell
+      writeFile file: 'row.tmp', text: csvLine + "\n"
 
-          sh """
-            set -eu
-            mkdir -p \$(dirname '${CSV_LEDGER}')
-            touch '${CSV_LEDGER}'
-            if ! head -1 '${CSV_LEDGER}' | grep -q '^timestamp,jobName,buildNumber,'; then
-              echo '${header}' >> '${CSV_LEDGER}'
-            fi
-            echo ${csvLine@Q} >> '${CSV_LEDGER}'
-            cp '${CSV_LEDGER}' '${CSV_LOCAL}'
-          """
+      def header = [
+        'timestamp','jobName','buildNumber','gitUrl','gitCommit',
+        'scenariosTotal','scenariosPassed','scenariosFailed','scenariosSkipped',
+        'stepsTotal','stepsPassed','stepsFailed','stepsSkipped','stepsPending',
+        'buildUrl','bundleUrl','allureUrl'
+      ].join(',')
 
-          archiveArtifacts artifacts: "${env.CSV_LOCAL}", allowEmptyArchive: false
-        }
-      }
+      sh """
+        set -eu
+        mkdir -p \$(dirname '${CSV_LEDGER}')
+        touch '${CSV_LEDGER}'
+        if ! head -1 '${CSV_LEDGER}' | grep -q '^timestamp,jobName,buildNumber,'; then
+          echo '${header}' >> '${CSV_LEDGER}'
+        fi
+        cat row.tmp >> '${CSV_LEDGER}'
+        cp '${CSV_LEDGER}' '${CSV_LOCAL}'
+      """
+
+      archiveArtifacts artifacts: "${env.CSV_LOCAL}", allowEmptyArchive: false
     }
-
+  }
+}
     stage('Publish CSV as HTML') {
       steps {
         script {
