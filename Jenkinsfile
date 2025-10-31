@@ -239,8 +239,8 @@ a.btn{display:inline-block;padding:8px 12px;border:1px solid #0a66c2;border-radi
         <b>Step Results:</b><br/>
         Total: ${env.TOTAL_STEPS} &nbsp; | &nbsp; Passed: ${env.PASSED_STEPS} &nbsp; | &nbsp; Failed: ${env.FAILED_STEPS} &nbsp; | &nbsp; Skipped: ${env.SKIPPED_STEPS} &nbsp; | &nbsp; Pending: ${env.PENDING_STEPS}<br/>
         <hr/>
-        <b>CSV (download):</b> <a href="${csvArtifactUrl}">test_results.csv</a><br/>
-        <b>CSV (HTML view):</b> <a href="${csvHtmlUrl}">Test Results (CSV)</a><br/>
+        <b>Automation Test Records CSV (download):</b> <a href="${csvArtifactUrl}">test_results.csv</a><br/>
+        <b>Automation Test Records CSV (online view):</b> <a href="${csvHtmlUrl}">Test Results (CSV)</a><br/>
         <b>Report bundle (zip):</b> <a href="${env.BUILD_URL}artifact/reports-bundle.zip">Download</a><br/>
         <b>Allure report:</b> <a href="${env.BUILD_URL}allure">Open</a><br/>
         """
