@@ -15,7 +15,7 @@ pipeline {
     environment {
         GIT_URL = 'https://github.com/jubinrajnirmal/Scotiabank_Test_Automation.git'
         REPO_DIR = 'workdir'
-        EMAIL_TO = 'test.automation.server.2025@gmail.com, siddalwadi@outlook.com, jubinrajnirmal10@gmail.com, Manpreet.Panech@fdmgroup.com'
+        EMAIL_TO = 'test.automation.server.2025@gmail.com, siddalwadi@outlook.com, jubinrajnirmal10@gmail.com, Manpreet.Panech@fdmgroup.com, Teyfik.Acikgoz@fdmgroup.com'
 
         // CSV ledger lives on the Jenkins VM; we copy a snapshot per build
         CSV_LEDGER = '/home/tmp_admin/testResults/test_results.csv'
