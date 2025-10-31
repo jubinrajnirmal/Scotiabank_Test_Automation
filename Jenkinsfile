@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     options {
-        timestamps()
-        disableConcurrentBuilds()
-        buildDiscarder(logRotator(numToKeepStr: '50'))
+        timestamps()																// Build with timestamps
+        disableConcurrentBuilds()													// prevent more than one build 
+        buildDiscarder(logRotator(numToKeepStr: '50'))								// Keep last 50 builds
     }
 
     triggers {
         cron('TZ=America/Toronto\nH 12 * * *')   // 12 PM daily
-        githubPush()
+        githubPush()							 // Webhook 
     }
 
     environment {
@@ -272,7 +272,6 @@ Total: ${env.TOTAL_SCENARIOS} &nbsp; | &nbsp; Passed: ${env.PASSED_SCENARIOS} &n
 <b>Step Results: </b><br/>
 Total: ${env.TOTAL_STEPS} &nbsp; | &nbsp; Passed: ${env.PASSED_STEPS} &nbsp; | &nbsp; Failed: ${env.FAILED_STEPS} &nbsp; | &nbsp; Skipped: ${env.SKIPPED_STEPS} &nbsp; | &nbsp; Pending: ${env.PENDING_STEPS}<br/>
 <hr/>
-<b>Automation Test Records CSV (online view): </b> <a href="${csvHtmlUrl}">${REPORT_NAME}</a><br/>
 <b>Allure report: </b> <a href="${env.BUILD_URL}allure">Open</a><br/>
 Please see attached zip reports bundle.
 """
