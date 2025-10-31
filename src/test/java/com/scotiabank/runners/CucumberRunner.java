@@ -9,5 +9,5 @@ import org.junit.runner.RunWith;
 @CucumberOptions(features = "file:src/test/resources/features/_generated", // filesystem path
 		glue = { "com.scotiabank.stepdefs", "com.scotiabank.utils", "com.scotiabank.pages" }, plugin = {
 				"pretty", "html:reports/cucumber.html", "json:reports/cucumber.json",
-				"io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm" }, publish = true, tags = "@ui and @scotia and @rewards" ,monochrome = true)
+				"io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm" }, monochrome = true)
 public class CucumberRunner {}
