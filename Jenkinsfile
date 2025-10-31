@@ -178,8 +178,6 @@ pipeline {
 
       sh """
         set -eu
-        mkdir -p \$(dirname '${CSV_LEDGER}')
-        touch '${CSV_LEDGER}'
         if ! head -1 '${CSV_LEDGER}' | grep -q '^timestamp,jobName,buildNumber,'; then
           echo '${header}' >> '${CSV_LEDGER}'
         fi
