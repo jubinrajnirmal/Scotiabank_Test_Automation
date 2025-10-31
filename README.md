@@ -1,4 +1,4 @@
-# Scotiabank Test Automation
+# Scotiabank Test Automation Framework
 
 Selenium + Java + Cucumber (JUnit) automation test suite, built using Maven.
 
